@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>TravelHub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f5f5f5; color: #222; }
+    header { background: #185FA5; color: white; padding: 1rem 2rem; font-size: 1.3rem; font-weight: 500; }
+    .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+
+    .search-bar { display: flex; gap: 10px; flex-wrap: wrap; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; }
+    .search-bar input, .search-bar select { flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    .search-bar button { padding: 8px 20px; background: #185FA5; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .search-bar button:hover { background: #0C447C; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: 8px 18px; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; background: white; font-size: 14px; }
+    .tab.active { background: #185FA5; color: white; border-color: #185FA5; }
+
+    .section { display: none; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 1.5rem; }
+    .section.visible { display: block; }
+    .section h2 { font-size: 15px; color: #555; margin-bottom: 1rem; font-weight: 500; }
+
+    .resultado { background: #f0f4ff; border-radius: 8px; padding: 1rem; margin-top: 1rem; font-size: 14px; line-height: 1.7; }
+    .error { color: #993C1D; background: #FAECE7; border-radius: 8px; padding: 1rem; margin-top: 1rem; font-size: 13px; }
+    .loading { color: #555; font-size: 14px; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+
+<header>✈️ TravelHub</header>
+
+<div class="container">
+
+  <div class="search-bar">
+    <input type="text" id="ciudad" placeholder="Ciudad destino..." value="Paris">
+    <select id="desde">
+      <option value="COP">COP</option>
+      <option value="USD">USD</option>
+      <option value="EUR">EUR</option>
+    </select>
+    <select id="hasta">
+      <option value="EUR">EUR</option>
+      <option value="USD">USD</option>
+      <option value="COP">COP</option>
+    </select>
+    <input type="text" id="origen-iata" placeholder="IATA origen (ej: BOG)" value="BOG">
+    <input type="text" id="destino-iata" placeholder="IATA destino (ej: CDG)" value="CDG">
+    <button onclick="buscarTodo()">🔍 Buscar</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="mostrarTab('clima', this)">🌦️ Clima</div>
+    <div class="tab" onclick="mostrarTab('moneda', this)">💱 Moneda</div>
+    <div class="tab" onclick="mostrarTab('vuelos', this)">✈️ Vuelos</div>
+    <div class="tab" onclick="mostrarTab('hoteles', this)">🏨 Hoteles</div>
+  </div>
+
+  <div id="sec-clima" class="section visible">
+    <h2>🌦️ Clima actual</h2>
+    <div id="res-clima" class="resultado">Presiona "Buscar" para consultar el clima.</div>
+  </div>
+
+  <div id="sec-moneda" class="section">
+    <h2>💱 Conversión de moneda</h2>
+    <div id="res-moneda" class="resultado">Presiona "Buscar" para ver la tasa de cambio.</div>
+  </div>
+
+  <div id="sec-vuelos" class="section">
+    <h2>✈️ Vuelos</h2>
+    <div id="res-vuelos" class="resultado">Presiona "Buscar" para consultar vuelos.</div>
+  </div>
+
+  <div id="sec-hoteles" class="section">
+    <h2>🏨 Hoteles</h2>
+    <div id="res-hoteles" class="resultado">Presiona "Buscar" para ver hoteles disponibles.</div>
+  </div>
+
+</div>
+
+<script>
+  function mostrarTab(nombre, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('sec-' + nombre).classList.add('visible');
+    el.classList.add('active');
+  }
+
+  async function fetchJSON(url) {
+    const r = await fetch(url);
+    return r.json();
+  }
+
+  function mostrar(id, html) {
+    document.getElementById(id).innerHTML = html;
+  }
+
+  async function buscarTodo() {
+    const ciudad  = document.getElementById('ciudad').value || 'Paris';
+    const desde   = document.getElementById('desde').value;
+    const hasta   = document.getElementById('hasta').value;
+    const origen  = document.getElementById('origen-iata').value || 'BOG';
+    const destino = document.getElementById('destino-iata').value || 'CDG';
+
+    mostrar('res-clima',   '<p class="loading">Cargando clima...</p>');
+    mostrar('res-moneda',  '<p class="loading">Cargando moneda...</p>');
+    mostrar('res-vuelos',  '<p class="loading">Cargando vuelos...</p>');
+    mostrar('res-hoteles', '<p class="loading">Cargando hoteles...</p>');
+
+    // Clima
+    try {
+      const d = await fetchJSON(`/clima?ciudad=${ciudad}`);
+      if (d.cod && d.cod !== 200) throw new Error(d.message);
+      mostrar('res-clima', `
+        <strong>${d.name}, ${d.sys.country}</strong><br>
+        🌡️ Temperatura: <strong>${d.main.temp}°C</strong> (sensación ${d.main.feels_like}°C)<br>
+        ☁️ ${d.weather[0].description}<br>
+        💧 Humedad: ${d.main.humidity}% &nbsp;|&nbsp; 💨 Viento: ${d.wind.speed} km/h
+      `);
+    } catch(e) {
+      mostrar('res-clima', `<div class="error">Error: ${e.message}</div>`);
+    }
+
+    // Moneda
+    try {
+      const d = await fetchJSON(`/moneda?desde=${desde}&hasta=${hasta}`);
+      const tasa = d.rates[hasta];
+      mostrar('res-moneda', `
+        <strong>1 ${desde} = ${tasa} ${hasta}</strong><br>
+        Fecha: ${d.date}<br>
+        Fuente: Frankfurter API (gratuita 🎉)
+      `);
+    } catch(e) {
+      mostrar('res-moneda', `<div class="error">Error al obtener tasas.</div>`);
+    }
+
+    // Vuelos
+    try {
+      const d = await fetchJSON(`/vuelos?origen=${origen}&destino=${destino}`);
+      if (!d.data || d.data.length === 0) {
+        mostrar('res-vuelos', 'No se encontraron vuelos.');
+      } else {
+        const filas = d.data.slice(0, 5).map(v => `
+          <tr>
+            <td>${v.airline.name}</td>
+            <td>${v.flight.iata}</td>
+            <td>${v.departure.iata} → ${v.arrival.iata}</td>
+            <td>${v.flight_status}</td>
+          </tr>
+        `).join('');
+        mostrar('res-vuelos', `
+          <table style="width:100%;font-size:13px;border-collapse:collapse;">
+            <thead><tr style="background:#f0f4ff;">
+              <th style="padding:6px;text-align:left;">Aerolínea</th>
+              <th>Vuelo</th><th>Ruta</th><th>Estado</th>
+            </tr></thead>
+            <tbody>${filas}</tbody>
+          </table>
+        `);
+      }
+    } catch(e) {
+      mostrar('res-vuelos', `<div class="error">Error al consultar vuelos.</div>`);
+    }
+
+    // Hoteles
+    try {
+      const d = await fetchJSON(`/hoteles?ciudad=${ciudad}`);
+      if (!d || d.length === 0) {
+        mostrar('res-hoteles', 'No se encontraron hoteles.');
+      } else {
+        const cards = d.slice(0, 4).map(h => `
+          <div style="border:1px solid #ddd;border-radius:8px;padding:10px;margin-bottom:8px;">
+            <strong>${h.name}</strong><br>
+            ⭐ ${h.star_rating || 'N/A'} &nbsp;|&nbsp; 📍 ${h.address || ciudad}
+          </div>
+        `).join('');
+        mostrar('res-hoteles', cards);
+      }
+    } catch(e) {
+      mostrar('res-hoteles', `<div class="error">Error al consultar hoteles.</div>`);
+    }
+  }
+</script>
+
+</body>
+</html>

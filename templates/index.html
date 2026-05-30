@@ -407,7 +407,7 @@
     } catch(e) { /* sin imagen, no pasa nada */ }
   }
 
-  async function buscarTodo() {
+async function buscarTodo() {
     const ciudad  = document.getElementById('ciudad').value.trim() || 'Paris';
     const desde   = document.getElementById('desde').value;
     const hasta   = document.getElementById('hasta').value;
@@ -419,53 +419,61 @@
       return;
     }
 
-    // Limpiar estado anterior
     document.getElementById('resumen').style.display = 'none';
     document.getElementById('ciudad-hero').style.display = 'none';
     document.getElementById('mapa-container').style.display = 'none';
 
-    spinner(true, 'Conectando con las APIs...');
+    spinner(true, '🔄 Consultando las 4 APIs al mismo tiempo...');
 
-    // Limpiar secciones
-    secs.forEach(s => {
-    const titulos = {clima:'🌦️ Clima actual', moneda:'💱 Conversión de moneda', vuelos:'✈️ Vuelos disponibles', hoteles:'🏨 Hoteles disponibles'};
+    const titulos = {
+      clima: '🌦️ Clima actual',
+      moneda: '💱 Conversión de moneda',
+      vuelos: '✈️ Vuelos disponibles',
+      hoteles: '🏨 Hoteles disponibles'
+    };
+
+    ['clima','moneda','vuelos','hoteles'].forEach(s => {
       document.querySelector(`#sec-${s} .result-card`).innerHTML =
-    `<h2>${titulos[s]}</h2>
-     <div class="empty-state"><div class="spinner" style="margin:1rem auto"></div></div>`;
+        `<h2>${titulos[s]}</h2>
+         <div class="empty-state"><div class="spinner" style="margin:1rem auto"></div></div>`;
     });
 
-    const results = {};
+    // Todas al mismo tiempo
+    const [resClima, resMoneda, resVuelos, resHoteles] = await Promise.allSettled([
+      fetch(`/clima?ciudad=${ciudad}`).then(r => r.json()),
+      fetch(`/moneda?desde=${desde}&hasta=${hasta}`).then(r => r.json()),
+      fetch(`/vuelos?origen=${origen}&destino=${destino}`).then(r => r.json()),
+      fetch(`/hoteles?ciudad=${ciudad}`).then(r => r.json())
+    ]);
+
+    const dClima   = resClima.status   === 'fulfilled' ? resClima.value   : null;
+    const dMoneda  = resMoneda.status  === 'fulfilled' ? resMoneda.value  : null;
+    const dVuelos  = resVuelos.status  === 'fulfilled' ? resVuelos.value  : null;
+    const dHoteles = resHoteles.status === 'fulfilled' ? resHoteles.value : null;
 
     // ── CLIMA ──
-    spinner(true, '🌤️ Obteniendo clima...');
     try {
-      const d = await fetch(`/clima?ciudad=${ciudad}`).then(r => r.json());
-      if (d.cod && d.cod !== 200) throw new Error(d.message);
-
-      results.clima = `${Math.round(d.main.temp)}°C`;
-      document.getElementById('r-clima').textContent = `${Math.round(d.main.temp)}°C · ${d.weather[0].description}`;
-      document.getElementById('ciudad-nombre').textContent = `${d.name}, ${d.sys.country}`;
-
-      // Mapa con coordenadas del clima
-      initMapa(d.coord.lat, d.coord.lon, d.name);
-      cargarImagenCiudad(ciudad, `${d.name}, ${d.sys.country}`, '');
-
+      if (!dClima || dClima.error) throw new Error(dClima?.error || 'Sin respuesta');
+      if (dClima.cod && dClima.cod !== 200) throw new Error(dClima.message);
+      document.getElementById('r-clima').textContent = `${Math.round(dClima.main.temp)}°C · ${dClima.weather[0].description}`;
+      initMapa(dClima.coord.lat, dClima.coord.lon, dClima.name);
+      cargarImagenCiudad(ciudad, `${dClima.name}, ${dClima.sys.country}`, '');
       document.querySelector('#sec-clima .result-card').innerHTML = `
         <h2>🌦️ Clima actual</h2>
         <div class="clima-main">
           <div>
-            <div class="clima-temp">${Math.round(d.main.temp)}<span>°C</span></div>
-            <div class="clima-desc">${d.weather[0].description}</div>
-            <div class="clima-ciudad">📍 ${d.name}, ${d.sys.country}</div>
+            <div class="clima-temp">${Math.round(dClima.main.temp)}<span>°C</span></div>
+            <div class="clima-desc">${dClima.weather[0].description}</div>
+            <div class="clima-ciudad">📍 ${dClima.name}, ${dClima.sys.country}</div>
           </div>
         </div>
         <div class="clima-stats">
-          <div class="clima-stat"><div class="s-label">Sensación</div><div class="s-val">${Math.round(d.main.feels_like)}°C</div></div>
-          <div class="clima-stat"><div class="s-label">Mín / Máx</div><div class="s-val">${Math.round(d.main.temp_min)}° / ${Math.round(d.main.temp_max)}°</div></div>
-          <div class="clima-stat"><div class="s-label">Humedad</div><div class="s-val">${d.main.humidity}%</div></div>
-          <div class="clima-stat"><div class="s-label">Viento</div><div class="s-val">${d.wind.speed} km/h</div></div>
-          <div class="clima-stat"><div class="s-label">Presión</div><div class="s-val">${d.main.pressure} hPa</div></div>
-          <div class="clima-stat"><div class="s-label">Visibilidad</div><div class="s-val">${d.visibility ? (d.visibility/1000).toFixed(1)+' km' : 'N/A'}</div></div>
+          <div class="clima-stat"><div class="s-label">Sensación</div><div class="s-val">${Math.round(dClima.main.feels_like)}°C</div></div>
+          <div class="clima-stat"><div class="s-label">Mín / Máx</div><div class="s-val">${Math.round(dClima.main.temp_min)}° / ${Math.round(dClima.main.temp_max)}°</div></div>
+          <div class="clima-stat"><div class="s-label">Humedad</div><div class="s-val">${dClima.main.humidity}%</div></div>
+          <div class="clima-stat"><div class="s-label">Viento</div><div class="s-val">${dClima.wind.speed} km/h</div></div>
+          <div class="clima-stat"><div class="s-label">Presión</div><div class="s-val">${dClima.main.pressure} hPa</div></div>
+          <div class="clima-stat"><div class="s-label">Visibilidad</div><div class="s-val">${dClima.visibility ? (dClima.visibility/1000).toFixed(1)+' km' : 'N/A'}</div></div>
         </div>`;
     } catch(e) {
       document.querySelector('#sec-clima .result-card').innerHTML =
@@ -473,28 +481,23 @@
     }
 
     // ── MONEDA ──
-    spinner(true, '💱 Consultando tasas de cambio...');
     try {
-      const d = await fetch(`/moneda?desde=${desde}&hasta=${hasta}`).then(r => r.json());
-      if (d.error) throw new Error(d.error);
-      if (!d.rates) throw new Error('Sin datos de tasas');
-      const tasa = d.rates[hasta];
+      if (!dMoneda || dMoneda.error) throw new Error(dMoneda?.error || 'Sin respuesta');
+      if (!dMoneda.rates) throw new Error('Sin datos de tasas');
+      const tasa = dMoneda.rates[hasta];
       const tasaFmt = tasa < 0.01 ? tasa.toFixed(6) : tasa.toFixed(4);
-      results.moneda = `1 ${desde} = ${tasaFmt} ${hasta}`;
       document.getElementById('r-moneda').textContent = `1 ${desde} = ${tasaFmt} ${hasta}`;
-
       const ejemplos = [100000, 500000, 1000000, 5000000];
       const ejemplosHTML = ejemplos.map(n => `
         <div class="moneda-ejemplo">
           <div class="me-label">${n.toLocaleString('es-CO')} ${desde}</div>
           <div class="me-val">${(n * tasa).toFixed(2)} ${hasta}</div>
         </div>`).join('');
-
       document.querySelector('#sec-moneda .result-card').innerHTML = `
         <h2>💱 Conversión de moneda</h2>
         <div class="moneda-big">
           <div class="rate">1 ${desde} = ${tasaFmt} ${hasta}</div>
-          <div class="rate-sub">Actualizado: ${d.date} · Frankfurter API</div>
+          <div class="rate-sub">Actualizado: ${dMoneda.date} · Frankfurter API</div>
         </div>
         <div class="moneda-ejemplos">${ejemplosHTML}</div>`;
     } catch(e) {
@@ -503,19 +506,17 @@
     }
 
     // ── VUELOS ──
-    spinner(true, '✈️ Buscando vuelos...');
     try {
-      const d = await fetch(`/vuelos?origen=${origen}&destino=${destino}`).then(r => r.json());
-      if (d.error) throw new Error(JSON.stringify(d.error));
-      if (!d.data || d.data.length === 0) {
+      if (!dVuelos || dVuelos.error) throw new Error(dVuelos?.error || 'Sin respuesta');
+      if (!dVuelos.data || dVuelos.data.length === 0) {
         document.getElementById('r-vuelos').textContent = 'Sin resultados';
         document.querySelector('#sec-vuelos .result-card').innerHTML =
           `<h2>✈️ Vuelos disponibles</h2><div class="error-msg">No se encontraron vuelos de ${origen} → ${destino}.</div>`;
       } else {
-        const count = d.data.length;
+        const count = dVuelos.data.length;
         document.getElementById('r-vuelos').textContent = `${count} vuelo${count !== 1 ? 's' : ''} encontrado${count !== 1 ? 's' : ''}`;
         document.getElementById('badge-vuelos').textContent = count;
-        const items = d.data.slice(0, 6).map(v => `
+        const items = dVuelos.data.slice(0, 6).map(v => `
           <div class="vuelo-item">
             <div class="vuelo-top">
               <span class="vuelo-airline">✈️ ${v.airline?.name || 'N/A'} · ${v.flight?.iata || 'N/A'}</span>
@@ -542,20 +543,19 @@
     }
 
     // ── HOTELES ──
-    spinner(true, '🏨 Buscando hoteles...');
     try {
-      const d = await fetch(`/hoteles?ciudad=${ciudad}`).then(r => r.json());
-      if (d.error) throw new Error(d.error);
-      if (!Array.isArray(d)) throw new Error('Formato inesperado: ' + JSON.stringify(d).slice(0, 80));
-      if (d.length === 0) {
+      if (!dHoteles) throw new Error('Sin respuesta');
+      if (dHoteles.error) throw new Error(dHoteles.error);
+      if (!Array.isArray(dHoteles)) throw new Error('Formato inesperado: ' + JSON.stringify(dHoteles).slice(0, 80));
+      if (dHoteles.length === 0) {
         document.getElementById('r-hoteles').textContent = 'Sin resultados';
         document.querySelector('#sec-hoteles .result-card').innerHTML =
           `<h2>🏨 Hoteles disponibles</h2><div class="error-msg">No se encontraron hoteles en ${ciudad}.</div>`;
       } else {
-        document.getElementById('r-hoteles').textContent = `${d.length} hotel${d.length !== 1 ? 'es' : ''} encontrado${d.length !== 1 ? 's' : ''}`;
-        document.getElementById('badge-hoteles').textContent = d.length;
+        document.getElementById('r-hoteles').textContent = `${dHoteles.length} hotel${dHoteles.length !== 1 ? 'es' : ''} encontrado${dHoteles.length !== 1 ? 's' : ''}`;
+        document.getElementById('badge-hoteles').textContent = dHoteles.length;
         const stars = n => n ? '★'.repeat(Math.min(n,5)) + '☆'.repeat(Math.max(0,5-n)) : '★★★';
-        const cards = d.slice(0, 6).map(h => `
+        const cards = dHoteles.slice(0, 6).map(h => `
           <div class="hotel-item">
             <div class="hotel-name">🏨 ${h.name}</div>
             <div class="hotel-stars">${stars(h.star_rating)}</div>

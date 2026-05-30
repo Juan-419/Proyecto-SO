@@ -9,9 +9,13 @@
     header { background: #185FA5; color: white; padding: 1rem 2rem; font-size: 1.3rem; font-weight: 500; }
     .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
 
-    .search-bar { display: flex; gap: 10px; flex-wrap: wrap; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; }
-    .search-bar input, .search-bar select { flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-    .search-bar button { padding: 8px 20px; background: #185FA5; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .search-bar { background: white; border: 1px solid #ddd; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; }
+    .search-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-end; }
+    .search-row:last-child { margin-bottom: 0; }
+    .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+    .field label { font-size: 11px; color: #666; font-weight: 500; text-transform: uppercase; }
+    .field input, .field select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    .search-bar button { padding: 9px 24px; background: #185FA5; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; align-self: flex-end; }
     .search-bar button:hover { background: #0C447C; }
 
     .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -25,6 +29,7 @@
     .resultado { background: #f0f4ff; border-radius: 8px; padding: 1rem; margin-top: 1rem; font-size: 14px; line-height: 1.7; }
     .error { color: #993C1D; background: #FAECE7; border-radius: 8px; padding: 1rem; margin-top: 1rem; font-size: 13px; }
     .loading { color: #555; font-size: 14px; margin-top: 1rem; }
+    .iata-hint { font-size: 11px; color: #888; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -34,20 +39,41 @@
 <div class="container">
 
   <div class="search-bar">
-    <input type="text" id="ciudad" placeholder="Ciudad destino..." value="Paris">
-    <select id="desde">
-      <option value="COP">COP</option>
-      <option value="USD">USD</option>
-      <option value="EUR">EUR</option>
-    </select>
-    <select id="hasta">
-      <option value="EUR">EUR</option>
-      <option value="USD">USD</option>
-      <option value="COP">COP</option>
-    </select>
-    <input type="text" id="origen-iata" placeholder="IATA origen (ej: BOG)" value="BOG">
-    <input type="text" id="destino-iata" placeholder="IATA destino (ej: CDG)" value="CDG">
-    <button onclick="buscarTodo()">🔍 Buscar</button>
+    <div class="search-row">
+      <div class="field">
+        <label>🏙️ Ciudad destino</label>
+        <input type="text" id="ciudad" placeholder="Ej: Paris, Tokyo, London" value="Paris">
+      </div>
+      <div class="field">
+        <label>💱 Moneda origen</label>
+        <select id="desde">
+          <option value="COP">COP — Peso colombiano</option>
+          <option value="USD">USD — Dólar</option>
+          <option value="EUR">EUR — Euro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>💱 Moneda destino</label>
+        <select id="hasta">
+          <option value="EUR">EUR — Euro</option>
+          <option value="USD">USD — Dólar</option>
+          <option value="COP">COP — Peso colombiano</option>
+        </select>
+      </div>
+    </div>
+    <div class="search-row">
+      <div class="field">
+        <label>✈️ Aeropuerto origen (código IATA)</label>
+        <input type="text" id="origen-iata" placeholder="Ej: BOG" value="BOG" maxlength="3" style="text-transform:uppercase">
+        <span class="iata-hint">BOG = Bogotá &nbsp;|&nbsp; MDE = Medellín &nbsp;|&nbsp; CLO = Cali</span>
+      </div>
+      <div class="field">
+        <label>🛬 Aeropuerto destino (código IATA)</label>
+        <input type="text" id="destino-iata" placeholder="Ej: CDG" value="CDG" maxlength="3" style="text-transform:uppercase">
+        <span class="iata-hint">CDG = París &nbsp;|&nbsp; JFK = Nueva York &nbsp;|&nbsp; MAD = Madrid</span>
+      </div>
+      <button onclick="buscarTodo()">🔍 Buscar</button>
+    </div>
   </div>
 
   <div class="tabs">
@@ -80,6 +106,9 @@
 </div>
 
 <script>
+  document.getElementById('origen-iata').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+  document.getElementById('destino-iata').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+
   function mostrarTab(nombre, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -100,8 +129,13 @@
     const ciudad  = document.getElementById('ciudad').value || 'Paris';
     const desde   = document.getElementById('desde').value;
     const hasta   = document.getElementById('hasta').value;
-    const origen  = document.getElementById('origen-iata').value || 'BOG';
-    const destino = document.getElementById('destino-iata').value || 'CDG';
+    const origen  = document.getElementById('origen-iata').value.toUpperCase() || 'BOG';
+    const destino = document.getElementById('destino-iata').value.toUpperCase() || 'CDG';
+
+    if (origen.length !== 3 || destino.length !== 3) {
+      alert('Los códigos IATA deben tener exactamente 3 letras. Ej: BOG, CDG, JFK');
+      return;
+    }
 
     mostrar('res-clima',   '<p class="loading">Cargando clima...</p>');
     mostrar('res-moneda',  '<p class="loading">Cargando moneda...</p>');
@@ -119,12 +153,14 @@
         💧 Humedad: ${d.main.humidity}% &nbsp;|&nbsp; 💨 Viento: ${d.wind.speed} km/h
       `);
     } catch(e) {
-      mostrar('res-clima', `<div class="error">Error: ${e.message}</div>`);
+      mostrar('res-clima', `<div class="error">❌ Error clima: ${e.message}</div>`);
     }
 
     // Moneda
     try {
       const d = await fetchJSON(`/moneda?desde=${desde}&hasta=${hasta}`);
+      if (d.error) throw new Error(d.error);
+      if (!d.rates) throw new Error('Respuesta inesperada de la API');
       const tasa = d.rates[hasta];
       mostrar('res-moneda', `
         <strong>1 ${desde} = ${tasa} ${hasta}</strong><br>
@@ -132,42 +168,47 @@
         Fuente: Frankfurter API (gratuita 🎉)
       `);
     } catch(e) {
-      mostrar('res-moneda', `<div class="error">Error al obtener tasas.</div>`);
+      mostrar('res-moneda', `<div class="error">❌ Error moneda: ${e.message}</div>`);
     }
 
     // Vuelos
     try {
       const d = await fetchJSON(`/vuelos?origen=${origen}&destino=${destino}`);
+      if (d.error) throw new Error(JSON.stringify(d.error));
       if (!d.data || d.data.length === 0) {
-        mostrar('res-vuelos', 'No se encontraron vuelos.');
+        mostrar('res-vuelos', `<div class="error">No se encontraron vuelos de ${origen} → ${destino}. Verifica los códigos IATA.</div>`);
       } else {
         const filas = d.data.slice(0, 5).map(v => `
           <tr>
-            <td>${v.airline.name}</td>
-            <td>${v.flight.iata}</td>
-            <td>${v.departure.iata} → ${v.arrival.iata}</td>
-            <td>${v.flight_status}</td>
+            <td style="padding:6px 8px">${v.airline?.name || 'N/A'}</td>
+            <td style="padding:6px 8px">${v.flight?.iata || 'N/A'}</td>
+            <td style="padding:6px 8px">${v.departure?.iata || origen} → ${v.arrival?.iata || destino}</td>
+            <td style="padding:6px 8px">${v.flight_status || 'N/A'}</td>
           </tr>
         `).join('');
         mostrar('res-vuelos', `
           <table style="width:100%;font-size:13px;border-collapse:collapse;">
             <thead><tr style="background:#f0f4ff;">
-              <th style="padding:6px;text-align:left;">Aerolínea</th>
-              <th>Vuelo</th><th>Ruta</th><th>Estado</th>
+              <th style="padding:6px 8px;text-align:left;">Aerolínea</th>
+              <th style="padding:6px 8px;text-align:left;">Vuelo</th>
+              <th style="padding:6px 8px;text-align:left;">Ruta</th>
+              <th style="padding:6px 8px;text-align:left;">Estado</th>
             </tr></thead>
             <tbody>${filas}</tbody>
           </table>
         `);
       }
     } catch(e) {
-      mostrar('res-vuelos', `<div class="error">Error al consultar vuelos.</div>`);
+      mostrar('res-vuelos', `<div class="error">❌ Error vuelos: ${e.message}</div>`);
     }
 
     // Hoteles
     try {
       const d = await fetchJSON(`/hoteles?ciudad=${ciudad}`);
-      if (!d || d.length === 0) {
-        mostrar('res-hoteles', 'No se encontraron hoteles.');
+      if (d.error) throw new Error(d.error);
+      if (!Array.isArray(d)) throw new Error('Formato inesperado: ' + JSON.stringify(d).slice(0, 100));
+      if (d.length === 0) {
+        mostrar('res-hoteles', `<div class="error">No se encontraron hoteles en ${ciudad}.</div>`);
       } else {
         const cards = d.slice(0, 4).map(h => `
           <div style="border:1px solid #ddd;border-radius:8px;padding:10px;margin-bottom:8px;">
@@ -178,7 +219,7 @@
         mostrar('res-hoteles', cards);
       }
     } catch(e) {
-      mostrar('res-hoteles', `<div class="error">Error al consultar hoteles.</div>`);
+      mostrar('res-hoteles', `<div class="error">❌ Error hoteles: ${e.message}</div>`);
     }
   }
 </script>

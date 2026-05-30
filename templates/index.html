@@ -427,11 +427,11 @@
     spinner(true, 'Conectando con las APIs...');
 
     // Limpiar secciones
-    const secs = ['clima','moneda','vuelos','hoteles'];
     secs.forEach(s => {
+    const titulos = {clima:'🌦️ Clima actual', moneda:'💱 Conversión de moneda', vuelos:'✈️ Vuelos disponibles', hoteles:'🏨 Hoteles disponibles'};
       document.querySelector(`#sec-${s} .result-card`).innerHTML =
-        `<h2>${{clima:'🌦️ Clima actual',moneda:'💱 Conversión de moneda',vuelos:'✈️ Vuelos disponibles',hoteles:'🏨 Hoteles disponibles'}[s]}</h2>
-         <div class="empty-state"><div class="spinner" style="margin:1rem auto"></div></div>`;
+    `<h2>${titulos[s]}</h2>
+     <div class="empty-state"><div class="spinner" style="margin:1rem auto"></div></div>`;
     });
 
     const results = {};

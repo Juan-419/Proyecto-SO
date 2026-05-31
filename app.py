@@ -30,12 +30,25 @@ def moneda():
     hasta = request.args.get("hasta", "EUR")
     try:
         r = requests.get(
-            f"https://api.frankfurter.app/latest?from={desde}&to={hasta}",
+            f"https://open.er-api.com/v6/latest/{desde}",
             timeout=10
         )
-        return jsonify(r.json())
+        data = r.json()
+        if data.get("result") != "success":
+            return jsonify({"error": "No se pudo obtener la tasa"})
+
+        tasa = data["rates"].get(hasta)
+        if not tasa:
+            return jsonify({"error": f"Moneda {hasta} no encontrada"})
+
+        return jsonify({
+            "rates": {hasta: tasa},
+            "date": data["time_last_update_utc"][:16]
+        })
     except requests.Timeout:
         return jsonify({"error": "Moneda no respondió a tiempo"}), 504
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/vuelos")
 def vuelos():

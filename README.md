@@ -184,7 +184,7 @@ http://localhost:5000
    - Clima.
    - Conversión monetaria.
    - Vuelos.
-   - -Aeropuertos, tanto de origen como de destino
+   - Aeropuertos, tanto de origen como de destino
    - Hoteles.
    - Ubicación en mapa.
 

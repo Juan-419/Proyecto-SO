@@ -54,6 +54,7 @@ def vuelos():
 def hoteles():
     ciudad = request.args.get("ciudad", "Paris")
     try:
+        # Primero obtenemos las coordenadas de la ciudad
         geo = requests.get(
             "https://nominatim.openstreetmap.org/search",
             params={"q": ciudad, "format": "json", "limit": 1},
@@ -64,34 +65,33 @@ def hoteles():
         if not geo:
             return jsonify({"error": f"Ciudad '{ciudad}' no encontrada"})
 
-        lat = geo[0]["lat"]
-        lon = geo[0]["lon"]
+        # Usamos el boundingbox de la ciudad para buscar hoteles dentro de ella
+        bbox = geo[0]["boundingbox"]  # [sur, norte, oeste, este]
+        sur, norte, oeste, este = bbox[0], bbox[1], bbox[2], bbox[3]
 
-        query = f"""[out:json][timeout:10];
-node["tourism"="hotel"](around:5000,{lat},{lon});
-out 10;"""
-
-        resp = requests.post(
-            "https://overpass-api.de/api/interpreter",
-            data={"data": query},  # ← cambio clave: mandar como form data con clave "data"
-            timeout=15
-        )
-
-        print("STATUS OVERPASS:", resp.status_code)
-        print("RESPUESTA:", resp.text[:300])
-
-        r = resp.json()
+        r = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={
+                "q": "hotel",
+                "format": "json",
+                "limit": 10,
+                "addressdetails": 1,
+                "viewbox": f"{oeste},{norte},{este},{sur}",
+                "bounded": 1
+            },
+            headers={"User-Agent": "GlobePlanner/1.0"},
+            timeout=10
+        ).json()
 
         hoteles = []
-        for el in r.get("elements", []):
-            tags = el.get("tags", {})
-            nombre = tags.get("name")
-            if nombre:
-                hoteles.append({
-                    "name": nombre,
-                    "star_rating": int(tags.get("stars", 0)) if tags.get("stars", "").isdigit() else None,
-                    "address": tags.get("addr:street", "") + " " + tags.get("addr:housenumber", "")
-                })
+        for lugar in r:
+            nombre = lugar.get("display_name", "").split(",")[0]
+            direccion = ", ".join(lugar.get("display_name", "").split(",")[1:3]).strip()
+            hoteles.append({
+                "name": nombre,
+                "star_rating": None,
+                "address": direccion
+            })
 
         return jsonify(hoteles)
 

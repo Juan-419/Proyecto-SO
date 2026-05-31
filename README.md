@@ -178,7 +178,7 @@ http://localhost:5000
 
 1. Ingresar una ciudad destino.
 2. Seleccionar moneda de origen y destino.
-3. Ingresar códigos IATA de origen y destino.
+3. Los codigos IATA se dan automaticamente con el ingreso de la ciudad destino
 4. Presionar **Buscar**.
 5. Consultar:
    - Clima.

@@ -35,6 +35,7 @@
     }
     .field input:focus, .field select:focus { border-color: #185FA5; outline: none; background: white; }
     .iata-hint { font-size: 10px; color: #aaa; }
+    .iata-ok { font-size: 10px; color: #3B6D11; font-weight: 600; display: none; }
     .btn-buscar {
       padding: 11px 28px; background: linear-gradient(135deg, #185FA5, #0f3460);
       color: white; border: none; border-radius: 10px; cursor: pointer;
@@ -45,7 +46,6 @@
     .btn-buscar:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(24,95,165,0.4); }
     .btn-buscar:active { transform: scale(0.97); }
 
-    /* AVISO AEROPUERTO */
     #aviso-aeropuerto {
       display: none;
       background: #fff8e1; border: 1px solid #ffe082;
@@ -53,10 +53,7 @@
       margin-bottom: 1rem; font-size: 14px; color: #5f4300;
     }
 
-    .spinner-overlay {
-      display: none; text-align: center; padding: 2rem;
-      font-size: 14px; color: #555;
-    }
+    .spinner-overlay { display: none; text-align: center; padding: 2rem; font-size: 14px; color: #555; }
     .spinner {
       width: 36px; height: 36px; border: 3px solid #e0e0e0;
       border-top-color: #185FA5; border-radius: 50%;
@@ -178,7 +175,6 @@
     .empty-state { text-align: center; padding: 3rem 1rem; color: #aaa; }
     .empty-state .es-icon { font-size: 48px; margin-bottom: 12px; }
     .empty-state p { font-size: 14px; }
-
     .error-msg { background: #fff3f3; border: 1px solid #ffd0d0; color: #c62828; border-radius: 10px; padding: 12px 16px; font-size: 13px; }
 
     @media (max-width: 600px) {
@@ -234,22 +230,20 @@
       <div class="field">
         <label>🛬 Aeropuerto destino (IATA)</label>
         <input type="text" id="destino-iata" placeholder="Ej: CDG" value="CDG" maxlength="3" style="text-transform:uppercase">
-        <span class="iata-hint">CDG = París · JFK = Nueva York · MAD = Madrid</span>
+        <span class="iata-hint" id="iata-hint-destino">CDG = París · JFK = Nueva York · MAD = Madrid</span>
+        <span class="iata-ok" id="iata-ok-destino">✅ Aeropuerto detectado automáticamente</span>
       </div>
       <button class="btn-buscar" onclick="buscarTodo()">🔍 Buscar</button>
     </div>
   </div>
 
-  <!-- AVISO AEROPUERTO -->
   <div id="aviso-aeropuerto"></div>
 
-  <!-- SPINNER -->
   <div class="spinner-overlay" id="spinner">
     <div class="spinner"></div>
     <p id="spinner-msg">Buscando información...</p>
   </div>
 
-  <!-- RESUMEN -->
   <div id="resumen">
     <h2>📊 Resumen del destino</h2>
     <div class="resumen-grid">
@@ -260,91 +254,122 @@
     </div>
   </div>
 
-  <!-- IMAGEN CIUDAD -->
   <div id="ciudad-hero">
     <img id="ciudad-img" src="" alt="Ciudad">
-    <div class="overlay">
-      <h3 id="ciudad-nombre">--</h3>
-    </div>
+    <div class="overlay"><h3 id="ciudad-nombre">--</h3></div>
   </div>
 
-  <!-- MAPA -->
-  <div id="mapa-container">
-    <div id="mapa"></div>
-  </div>
+  <div id="mapa-container"><div id="mapa"></div></div>
 
-  <!-- TABS -->
   <div class="tabs">
-    <div class="tab active" onclick="mostrarTab('clima', this)">
-      <span class="tab-icon">🌦️</span> Clima
-    </div>
-    <div class="tab" onclick="mostrarTab('moneda', this)">
-      <span class="tab-icon">💱</span> Moneda
-    </div>
-    <div class="tab" onclick="mostrarTab('vuelos', this)">
-      <span class="tab-icon">✈️</span> Vuelos
-      <span class="tab-badge" id="badge-vuelos"></span>
-    </div>
-    <div class="tab" onclick="mostrarTab('hoteles', this)">
-      <span class="tab-icon">🏨</span> Hoteles
-      <span class="tab-badge" id="badge-hoteles"></span>
-    </div>
+    <div class="tab active" onclick="mostrarTab('clima', this)"><span class="tab-icon">🌦️</span> Clima</div>
+    <div class="tab" onclick="mostrarTab('moneda', this)"><span class="tab-icon">💱</span> Moneda</div>
+    <div class="tab" onclick="mostrarTab('vuelos', this)"><span class="tab-icon">✈️</span> Vuelos <span class="tab-badge" id="badge-vuelos"></span></div>
+    <div class="tab" onclick="mostrarTab('hoteles', this)"><span class="tab-icon">🏨</span> Hoteles <span class="tab-badge" id="badge-hoteles"></span></div>
   </div>
 
-  <!-- CLIMA -->
   <div id="sec-clima" class="section visible">
-    <div class="result-card">
-      <h2>🌦️ Clima actual</h2>
-      <div class="empty-state"><div class="es-icon">🌍</div><p>Ingresa una ciudad y presiona Buscar</p></div>
-    </div>
+    <div class="result-card"><h2>🌦️ Clima actual</h2><div class="empty-state"><div class="es-icon">🌍</div><p>Ingresa una ciudad y presiona Buscar</p></div></div>
   </div>
-
-  <!-- MONEDA -->
   <div id="sec-moneda" class="section">
-    <div class="result-card">
-      <h2>💱 Conversión de moneda</h2>
-      <div class="empty-state"><div class="es-icon">💰</div><p>Selecciona las monedas y presiona Buscar</p></div>
-    </div>
+    <div class="result-card"><h2>💱 Conversión de moneda</h2><div class="empty-state"><div class="es-icon">💰</div><p>Selecciona las monedas y presiona Buscar</p></div></div>
   </div>
-
-  <!-- VUELOS -->
   <div id="sec-vuelos" class="section">
-    <div class="result-card">
-      <h2>✈️ Vuelos disponibles</h2>
-      <div class="empty-state"><div class="es-icon">✈️</div><p>Ingresa los códigos IATA y presiona Buscar</p></div>
-    </div>
+    <div class="result-card"><h2>✈️ Vuelos disponibles</h2><div class="empty-state"><div class="es-icon">✈️</div><p>Ingresa los códigos IATA y presiona Buscar</p></div></div>
   </div>
-
-  <!-- HOTELES -->
   <div id="sec-hoteles" class="section">
-    <div class="result-card">
-      <h2>🏨 Hoteles disponibles</h2>
-      <div class="empty-state"><div class="es-icon">🏨</div><p>Ingresa una ciudad y presiona Buscar</p></div>
-    </div>
+    <div class="result-card"><h2>🏨 Hoteles disponibles</h2><div class="empty-state"><div class="es-icon">🏨</div><p>Ingresa una ciudad y presiona Buscar</p></div></div>
   </div>
 
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+  // ── IATA uppercase manual ──
   document.getElementById('origen-iata').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
-  document.getElementById('destino-iata').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+  document.getElementById('destino-iata').addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+    // Si el usuario escribe manualmente, quitar el aviso de autodetección
+    document.getElementById('iata-ok-destino').style.display = 'none';
+    document.getElementById('iata-hint-destino').style.display = 'block';
+    document.getElementById('destino-iata').style.borderColor = '#e0e0e0';
+  });
 
-  let mapa = null;
+  // ── Diccionario IATA ──
+  var iataMap = {
+    // Colombia
+    'bogota': 'BOG', 'medellin': 'MDE', 'cali': 'CLO', 'cartagena': 'CTG',
+    'barranquilla': 'BAQ', 'bucaramanga': 'BGA', 'pereira': 'PEI', 'manizales': 'MZL',
+    'cucuta': 'CUC', 'pasto': 'PSO', 'armenia': 'AXM', 'santa marta': 'SMR',
+    // América del Sur
+    'lima': 'LIM', 'brasilia': 'BSB', 'sao paulo': 'GRU', 'rio de janeiro': 'GIG',
+    'buenos aires': 'EZE', 'santiago': 'SCL', 'quito': 'UIO', 'caracas': 'CCS',
+    'montevideo': 'MVD', 'la paz': 'LPB', 'asuncion': 'ASU', 'guayaquil': 'GYE',
+    'santa cruz': 'VVI', 'recife': 'REC', 'fortaleza': 'FOR', 'belo horizonte': 'CNF',
+    // América Central y Caribe
+    'panama': 'PTY', 'san jose': 'SJO', 'ciudad de guatemala': 'GUA',
+    'tegucigalpa': 'TGU', 'managua': 'MGA', 'santo domingo': 'SDQ',
+    'san juan': 'SJU', 'havana': 'HAV', 'la habana': 'HAV', 'cancun': 'CUN',
+    // América del Norte
+    'ciudad de mexico': 'MEX', 'mexico': 'MEX', 'guadalajara': 'GDL',
+    'monterrey': 'MTY', 'miami': 'MIA', 'nueva york': 'JFK', 'new york': 'JFK',
+    'los angeles': 'LAX', 'chicago': 'ORD', 'toronto': 'YYZ', 'vancouver': 'YVR',
+    'montreal': 'YUL', 'boston': 'BOS', 'washington': 'DCA', 'atlanta': 'ATL',
+    'dallas': 'DFW', 'houston': 'IAH', 'san francisco': 'SFO', 'seattle': 'SEA',
+    // Europa
+    'paris': 'CDG', 'london': 'LHR', 'londres': 'LHR', 'madrid': 'MAD',
+    'barcelona': 'BCN', 'roma': 'FCO', 'rome': 'FCO', 'berlin': 'BER',
+    'amsterdam': 'AMS', 'frankfurt': 'FRA', 'munich': 'MUC', 'lisboa': 'LIS',
+    'lisbon': 'LIS', 'zurich': 'ZRH', 'viena': 'VIE', 'vienna': 'VIE',
+    'bruselas': 'BRU', 'brussels': 'BRU', 'estocolmo': 'ARN', 'oslo': 'OSL',
+    'copenhague': 'CPH', 'helsinki': 'HEL', 'varsovia': 'WAW', 'praga': 'PRG',
+    'budapest': 'BUD', 'atenas': 'ATH', 'istanbul': 'IST', 'estambul': 'IST',
+    'milan': 'MXP', 'milan': 'MXP', 'niza': 'NCE', 'nice': 'NCE',
+    'dublin': 'DUB', 'edimburgo': 'EDI', 'edinburgh': 'EDI',
+    // Asia
+    'tokyo': 'NRT', 'tokio': 'NRT', 'dubai': 'DXB', 'singapur': 'SIN',
+    'singapore': 'SIN', 'bangkok': 'BKK', 'hong kong': 'HKG', 'seoul': 'ICN',
+    'beijing': 'PEK', 'shanghai': 'PVG', 'mumbai': 'BOM', 'delhi': 'DEL',
+    'kuala lumpur': 'KUL', 'jakarta': 'CGK', 'manila': 'MNL', 'taipei': 'TPE',
+    'doha': 'DOH', 'abu dhabi': 'AUH', 'tel aviv': 'TLV', 'karachi': 'KHI',
+    // Oceanía
+    'sydney': 'SYD', 'melbourne': 'MEL', 'brisbane': 'BNE', 'auckland': 'AKL',
+    // África
+    'cairo': 'CAI', 'el cairo': 'CAI', 'johannesburg': 'JNB', 'nairobi': 'NBO',
+    'casablanca': 'CMN', 'lagos': 'LOS', 'accra': 'ACC', 'addis abeba': 'ADD'
+  };
 
-  const avisosCiudades = {
-    'monaco': 'NCE (Niza, Francia)',
-    'andorra': 'BCN (Barcelona, España)',
-    'vaticano': 'FCO (Roma, Italia)',
-    'san marino': 'RMI (Rimini, Italia)',
-    'liechtenstein': 'ZRH (Zúrich, Suiza)',
-    'maldivas': 'MLE (Malé)',
+  // ── Autodetectar IATA al escribir ciudad ──
+  document.getElementById('ciudad').addEventListener('input', function() {
+    var key = this.value.toLowerCase().trim();
+    var inputDestino = document.getElementById('destino-iata');
+    var hintEl = document.getElementById('iata-hint-destino');
+    var okEl = document.getElementById('iata-ok-destino');
+
+    if (iataMap[key]) {
+      inputDestino.value = iataMap[key];
+      inputDestino.style.borderColor = '#3B6D11';
+      hintEl.style.display = 'none';
+      okEl.style.display = 'block';
+    } else {
+      inputDestino.style.borderColor = '#e0e0e0';
+      hintEl.style.display = 'block';
+      okEl.style.display = 'none';
+    }
+  });
+
+  var avisosCiudades = {
+    'monaco': 'NCE (Niza, Francia)', 'andorra': 'BCN (Barcelona, España)',
+    'vaticano': 'FCO (Roma, Italia)', 'san marino': 'RMI (Rimini, Italia)',
+    'liechtenstein': 'ZRH (Zúrich, Suiza)', 'maldivas': 'MLE (Malé)',
     'luxemburgo': 'LUX (Luxemburgo)'
   };
 
+  var mapa = null;
+
   function mostrarTab(nombre, el) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('visible'); });
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
     document.getElementById('sec-' + nombre).classList.add('visible');
     el.classList.add('active');
   }
@@ -367,17 +392,14 @@
     document.getElementById('mapa-container').style.display = 'block';
     if (mapa) { mapa.remove(); mapa = null; }
     mapa = L.map('mapa').setView([lat, lon], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(mapa);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(mapa);
     L.marker([lat, lon]).addTo(mapa).bindPopup('📍 ' + nombre).openPopup();
   }
 
   async function cargarImagenCiudad(ciudad, nombreCompleto) {
     try {
-      const url = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(ciudad);
-      const r = await fetch(url);
-      const d = await r.json();
+      var r = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(ciudad));
+      var d = await r.json();
       if (d.thumbnail && d.thumbnail.source) {
         document.getElementById('ciudad-img').src = d.thumbnail.source.replace(/\/\d+px-/, '/800px-');
         document.getElementById('ciudad-nombre').textContent = nombreCompleto || ciudad;
@@ -387,20 +409,19 @@
   }
 
   async function buscarTodo() {
-    const ciudad  = document.getElementById('ciudad').value.trim() || 'Paris';
-    const desde   = document.getElementById('desde').value;
-    const hasta   = document.getElementById('hasta').value;
-    const origen  = document.getElementById('origen-iata').value.toUpperCase().trim() || 'BOG';
-    const destino = document.getElementById('destino-iata').value.toUpperCase().trim() || 'CDG';
+    var ciudad  = document.getElementById('ciudad').value.trim() || 'Paris';
+    var desde   = document.getElementById('desde').value;
+    var hasta   = document.getElementById('hasta').value;
+    var origen  = document.getElementById('origen-iata').value.toUpperCase().trim() || 'BOG';
+    var destino = document.getElementById('destino-iata').value.toUpperCase().trim() || 'CDG';
 
     if (origen.length !== 3 || destino.length !== 3) {
       alert('Los códigos IATA deben tener exactamente 3 letras. Ej: BOG, CDG, JFK');
       return;
     }
 
-    // Aviso aeropuerto
-    const avisoEl = document.getElementById('aviso-aeropuerto');
-    const ciudadKey = ciudad.toLowerCase().trim();
+    var avisoEl = document.getElementById('aviso-aeropuerto');
+    var ciudadKey = ciudad.toLowerCase().trim();
     if (avisosCiudades[ciudadKey]) {
       avisoEl.innerHTML = '⚠️ <strong>' + ciudad + '</strong> no tiene aeropuerto propio. El más cercano es <strong>' + avisosCiudades[ciudadKey] + '</strong> — úsalo en el campo IATA destino.';
       avisoEl.style.display = 'block';
@@ -414,29 +435,23 @@
 
     spinner(true, '🔄 Consultando las 4 APIs al mismo tiempo...');
 
-    const titulos = {
-      clima: '🌦️ Clima actual',
-      moneda: '💱 Conversión de moneda',
-      vuelos: '✈️ Vuelos disponibles',
-      hoteles: '🏨 Hoteles disponibles'
-    };
-
+    var titulos = { clima: '🌦️ Clima actual', moneda: '💱 Conversión de moneda', vuelos: '✈️ Vuelos disponibles', hoteles: '🏨 Hoteles disponibles' };
     ['clima','moneda','vuelos','hoteles'].forEach(function(s) {
       document.querySelector('#sec-' + s + ' .result-card').innerHTML =
         '<h2>' + titulos[s] + '</h2><div class="empty-state"><div class="spinner" style="margin:1rem auto"></div></div>';
     });
 
-    const [resClima, resMoneda, resVuelos, resHoteles] = await Promise.allSettled([
-      fetch('/clima?ciudad=' + ciudad).then(function(r) { return r.json(); }),
+    var resultados = await Promise.allSettled([
+      fetch('/clima?ciudad=' + encodeURIComponent(ciudad)).then(function(r) { return r.json(); }),
       fetch('/moneda?desde=' + desde + '&hasta=' + hasta).then(function(r) { return r.json(); }),
       fetch('/vuelos?origen=' + origen + '&destino=' + destino).then(function(r) { return r.json(); }),
-      fetch('/hoteles?ciudad=' + ciudad).then(function(r) { return r.json(); })
+      fetch('/hoteles?ciudad=' + encodeURIComponent(ciudad)).then(function(r) { return r.json(); })
     ]);
 
-    const dClima   = resClima.status   === 'fulfilled' ? resClima.value   : null;
-    const dMoneda  = resMoneda.status  === 'fulfilled' ? resMoneda.value  : null;
-    const dVuelos  = resVuelos.status  === 'fulfilled' ? resVuelos.value  : null;
-    const dHoteles = resHoteles.status === 'fulfilled' ? resHoteles.value : null;
+    var dClima   = resultados[0].status === 'fulfilled' ? resultados[0].value : null;
+    var dMoneda  = resultados[1].status === 'fulfilled' ? resultados[1].value : null;
+    var dVuelos  = resultados[2].status === 'fulfilled' ? resultados[2].value : null;
+    var dHoteles = resultados[3].status === 'fulfilled' ? resultados[3].value : null;
 
     // CLIMA
     try {
@@ -461,32 +476,28 @@
         '<div class="clima-stat"><div class="s-label">Visibilidad</div><div class="s-val">' + (dClima.visibility ? (dClima.visibility/1000).toFixed(1)+' km' : 'N/A') + '</div></div>' +
         '</div>';
     } catch(e) {
-      document.querySelector('#sec-clima .result-card').innerHTML =
-        '<h2>🌦️ Clima actual</h2><div class="error-msg">❌ ' + e.message + '</div>';
+      document.querySelector('#sec-clima .result-card').innerHTML = '<h2>🌦️ Clima actual</h2><div class="error-msg">❌ ' + e.message + '</div>';
     }
 
     // MONEDA
     try {
       if (!dMoneda || dMoneda.error) throw new Error(dMoneda ? dMoneda.error : 'Sin respuesta');
       if (!dMoneda.rates) throw new Error('Sin datos de tasas');
-      const tasa = dMoneda.rates[hasta];
-      const tasaFmt = tasa < 0.01 ? tasa.toFixed(6) : tasa.toFixed(4);
+      var tasa = dMoneda.rates[hasta];
+      var tasaFmt = tasa < 0.01 ? tasa.toFixed(6) : tasa.toFixed(4);
       document.getElementById('r-moneda').textContent = '1 ' + desde + ' = ' + tasaFmt + ' ' + hasta;
-      const ejemplos = [100000, 500000, 1000000, 5000000];
-      let ejemplosHTML = '';
+      var ejemplos = [100000, 500000, 1000000, 5000000];
+      var ejemplosHTML = '';
       ejemplos.forEach(function(n) {
         ejemplosHTML += '<div class="moneda-ejemplo"><div class="me-label">' + n.toLocaleString('es-CO') + ' ' + desde + '</div><div class="me-val">' + (n * tasa).toFixed(2) + ' ' + hasta + '</div></div>';
       });
       document.querySelector('#sec-moneda .result-card').innerHTML =
         '<h2>💱 Conversión de moneda</h2>' +
-        '<div class="moneda-big">' +
-        '<div class="rate">1 ' + desde + ' = ' + tasaFmt + ' ' + hasta + '</div>' +
-        '<div class="rate-sub">Actualizado: ' + dMoneda.date + ' · ExchangeRate API</div>' +
-        '</div>' +
+        '<div class="moneda-big"><div class="rate">1 ' + desde + ' = ' + tasaFmt + ' ' + hasta + '</div>' +
+        '<div class="rate-sub">Actualizado: ' + dMoneda.date + ' · ExchangeRate API</div></div>' +
         '<div class="moneda-ejemplos">' + ejemplosHTML + '</div>';
     } catch(e) {
-      document.querySelector('#sec-moneda .result-card').innerHTML =
-        '<h2>💱 Conversión de moneda</h2><div class="error-msg">❌ ' + e.message + '</div>';
+      document.querySelector('#sec-moneda .result-card').innerHTML = '<h2>💱 Conversión de moneda</h2><div class="error-msg">❌ ' + e.message + '</div>';
     }
 
     // VUELOS
@@ -497,18 +508,16 @@
         document.querySelector('#sec-vuelos .result-card').innerHTML =
           '<h2>✈️ Vuelos disponibles</h2><div class="error-msg">No se encontraron vuelos de ' + origen + ' → ' + destino + '.</div>';
       } else {
-        const count = dVuelos.data.length;
+        var count = dVuelos.data.length;
         document.getElementById('r-vuelos').textContent = count + ' vuelo' + (count !== 1 ? 's' : '') + ' encontrado' + (count !== 1 ? 's' : '');
         document.getElementById('badge-vuelos').textContent = count;
-        let items = '';
+        var items = '';
         dVuelos.data.slice(0, 6).forEach(function(v) {
-          items +=
-            '<div class="vuelo-item">' +
+          items += '<div class="vuelo-item">' +
             '<div class="vuelo-top">' +
             '<span class="vuelo-airline">✈️ ' + (v.airline && v.airline.name ? v.airline.name : 'N/A') + ' · ' + (v.flight && v.flight.iata ? v.flight.iata : 'N/A') + '</span>' +
             '<span class="status-badge ' + statusClass(v.flight_status) + '">' + (v.flight_status || 'N/A') + '</span>' +
-            '</div>' +
-            '<div class="vuelo-ruta">' +
+            '</div><div class="vuelo-ruta">' +
             '<div class="vuelo-aeropuerto"><div class="iata-code">' + (v.departure && v.departure.iata ? v.departure.iata : origen) + '</div><div class="iata-city">' + (v.departure && v.departure.scheduled ? v.departure.scheduled.slice(11,16) : '') + '</div></div>' +
             '<div class="vuelo-linea"><div class="linea"></div><div class="dur">✈️</div><div class="linea"></div></div>' +
             '<div class="vuelo-aeropuerto"><div class="iata-code">' + (v.arrival && v.arrival.iata ? v.arrival.iata : destino) + '</div><div class="iata-city">' + (v.arrival && v.arrival.scheduled ? v.arrival.scheduled.slice(11,16) : '') + '</div></div>' +
@@ -518,8 +527,7 @@
           '<h2>✈️ Vuelos disponibles — ' + origen + ' → ' + destino + '</h2>' + items;
       }
     } catch(e) {
-      document.querySelector('#sec-vuelos .result-card').innerHTML =
-        '<h2>✈️ Vuelos disponibles</h2><div class="error-msg">❌ ' + e.message + '</div>';
+      document.querySelector('#sec-vuelos .result-card').innerHTML = '<h2>✈️ Vuelos disponibles</h2><div class="error-msg">❌ ' + e.message + '</div>';
     }
 
     // HOTELES
@@ -534,18 +542,17 @@
       } else {
         document.getElementById('r-hoteles').textContent = dHoteles.length + ' hotel' + (dHoteles.length !== 1 ? 'es' : '') + ' encontrado' + (dHoteles.length !== 1 ? 's' : '');
         document.getElementById('badge-hoteles').textContent = dHoteles.length;
-        let cards = '';
+        var cards = '';
         dHoteles.slice(0, 6).forEach(function(h) {
-          const n = h.star_rating;
-          const stars = n ? '★'.repeat(Math.min(n,5)) + '☆'.repeat(Math.max(0,5-n)) : '★★★';
+          var n = h.star_rating;
+          var stars = n ? '★'.repeat(Math.min(n,5)) + '☆'.repeat(Math.max(0,5-n)) : '★★★';
           cards += '<div class="hotel-item"><div class="hotel-name">🏨 ' + h.name + '</div><div class="hotel-stars">' + stars + '</div><div class="hotel-addr">📍 ' + (h.address || ciudad) + '</div></div>';
         });
         document.querySelector('#sec-hoteles .result-card').innerHTML =
           '<h2>🏨 Hoteles en ' + ciudad + '</h2><div class="hoteles-grid">' + cards + '</div>';
       }
     } catch(e) {
-      document.querySelector('#sec-hoteles .result-card').innerHTML =
-        '<h2>🏨 Hoteles disponibles</h2><div class="error-msg">❌ ' + e.message + '</div>';
+      document.querySelector('#sec-hoteles .result-card').innerHTML = '<h2>🏨 Hoteles disponibles</h2><div class="error-msg">❌ ' + e.message + '</div>';
     }
 
     spinner(false);

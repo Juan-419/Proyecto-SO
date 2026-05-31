@@ -6,7 +6,6 @@ app = Flask(__name__)
 
 OPENWEATHER_KEY   = os.getenv("OPENWEATHER_KEY")
 AVIATIONSTACK_KEY = os.getenv("AVIATIONSTACK_KEY")
-API_NINJAS_KEY    = os.getenv("API_NINJAS_KEY")
 
 @app.route("/")
 def index():
@@ -55,15 +54,49 @@ def vuelos():
 def hoteles():
     ciudad = request.args.get("ciudad", "Paris")
     try:
-        r = requests.get(
-            "https://api.api-ninjas.com/v1/hotels",
-            params={"city": ciudad},
-            headers={"X-Api-Key": API_NINJAS_KEY},
+        # Paso 1: coordenadas de la ciudad
+        geo = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={"q": ciudad, "format": "json", "limit": 1},
+            headers={"User-Agent": "GlobePlanner/1.0"},
             timeout=10
-        )
-        return jsonify(r.json())
+        ).json()
+
+        if not geo:
+            return jsonify({"error": f"Ciudad '{ciudad}' no encontrada"})
+
+        lat = geo[0]["lat"]
+        lon = geo[0]["lon"]
+
+        # Paso 2: hoteles cercanos con Overpass API (OpenStreetMap)
+        query = f"""
+        [out:json][timeout:10];
+        node["tourism"="hotel"](around:5000,{lat},{lon});
+        out 10;
+        """
+        r = requests.post(
+            "https://overpass-api.de/api/interpreter",
+            data=query,
+            timeout=15
+        ).json()
+
+        hoteles = []
+        for el in r.get("elements", []):
+            tags = el.get("tags", {})
+            nombre = tags.get("name")
+            if nombre:
+                hoteles.append({
+                    "name": nombre,
+                    "star_rating": int(tags.get("stars", 0)) if tags.get("stars", "").isdigit() else None,
+                    "address": tags.get("addr:street", "") + " " + tags.get("addr:housenumber", "")
+                })
+
+        return jsonify(hoteles)
+
     except requests.Timeout:
         return jsonify({"error": "Hoteles no respondió a tiempo"}), 504
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

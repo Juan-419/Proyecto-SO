@@ -54,7 +54,6 @@ def vuelos():
 def hoteles():
     ciudad = request.args.get("ciudad", "Paris")
     try:
-        # Paso 1: coordenadas de la ciudad
         geo = requests.get(
             "https://nominatim.openstreetmap.org/search",
             params={"q": ciudad, "format": "json", "limit": 1},
@@ -68,17 +67,20 @@ def hoteles():
         lat = geo[0]["lat"]
         lon = geo[0]["lon"]
 
-        # Paso 2: hoteles cercanos con Overpass API (OpenStreetMap)
-        query = f"""
-        [out:json][timeout:10];
-        node["tourism"="hotel"](around:5000,{lat},{lon});
-        out 10;
-        """
-        r = requests.post(
+        query = f"""[out:json][timeout:10];
+node["tourism"="hotel"](around:5000,{lat},{lon});
+out 10;"""
+
+        resp = requests.post(
             "https://overpass-api.de/api/interpreter",
-            data=query,
+            data={"data": query},  # ← cambio clave: mandar como form data con clave "data"
             timeout=15
-        ).json()
+        )
+
+        print("STATUS OVERPASS:", resp.status_code)
+        print("RESPUESTA:", resp.text[:300])
+
+        r = resp.json()
 
         hoteles = []
         for el in r.get("elements", []):
